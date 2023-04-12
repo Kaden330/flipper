@@ -1,8 +1,11 @@
-import numpy as np
 from difflib import SequenceMatcher, get_close_matches
-from utils import dollar_to_int, thousands
-from page import Page
 from typing import List
+
+import numpy as np
+
+from page import Page
+from utils import dollar_to_int, thousands
+
 
 def mileage_level(mileage:int) -> str:
     """
@@ -91,7 +94,7 @@ def style_from_specs(available_styles: List[str], listing_specs: dict) -> str:
     # Return the closest matching style
     return matches[0]
 
-def generate_briefing(year:int, make:str, style:str, model:str, mileage:int, desc:str, listing_price:int, private_party_ranges:dict, trade_in_ranges:dict) -> str:
+def generate_str_breifing(year:int, make:str, style:str, model:str, mileage:int, desc:str, listing_price:int, private_party_ranges:dict, trade_in_ranges:dict) -> str:
     """
     Generates a briefing for a car listing with information about the car, pricing, and potential profits.
 

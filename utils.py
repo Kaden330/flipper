@@ -8,7 +8,7 @@ def dollar_to_int(str):
         str = str.split('.')[:-1]
         str = ''.join(str)
         
-    val = searalize(str, replace_with='')
+    val = serialize(str, replace_with='')
     return float(val)
 
 def thousands(input):
@@ -17,7 +17,7 @@ def thousands(input):
     
     return f'{input:,}'
 
-def searalize(str, replace_with='-'):
+def serialize(str, replace_with='-'):
     # lowercase
     lowercase = str.lower()
 

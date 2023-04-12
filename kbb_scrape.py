@@ -6,7 +6,7 @@ import time
 from selenium.webdriver.support.expected_conditions import visibility_of_element_located
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from utils import searalize, dollar_to_int, search_a_in_b, calc_simalarity, StyleException
+from utils import serialize, dollar_to_int, search_a_in_b, calc_simalarity, StyleException
 import pandas as pd
 
 custom_user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
@@ -126,9 +126,9 @@ if __name__ == '__main__':
     # Print available styles for the car and their corresponding number
     print(f'\nAvailable styles for a {year} {model}...')
     available_styles = get_styles(
-        searalize(make), 
-        searalize(model), 
-        searalize(year))
+        serialize(make), 
+        serialize(model), 
+        serialize(year))
 
     for i, style in enumerate(available_styles):
         print(f'{i+1}. {style}')
@@ -140,23 +140,23 @@ if __name__ == '__main__':
     # Print price ranges for trade-in and private party sales
     print(f'\nPrice ranges for a {year} {style} {model}...')
     trade_in_ranges = get_ranges(
-        searalize(make), 
-        searalize(model), 
-        searalize(style), 
-        searalize(year), 
-        searalize(condition, replace_with=''), 
-        searalize(mileage),
+        serialize(make), 
+        serialize(model), 
+        serialize(style), 
+        serialize(year), 
+        serialize(condition, replace_with=''), 
+        serialize(mileage),
         trade_in=True)
     
     print(f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}")
 
     private_party_ranges = get_ranges(
-        searalize(make), 
-        searalize(model), 
-        searalize(style), 
-        searalize(year), 
+        serialize(make), 
+        serialize(model), 
+        serialize(style), 
+        serialize(year), 
         'good', 
-        searalize(mileage),
+        serialize(mileage),
         trade_in=False)
     
     print(f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}")
