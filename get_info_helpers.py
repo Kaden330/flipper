@@ -24,7 +24,7 @@ def mileage_level(mileage:int) -> str:
     else: # If mileage is greater than or equal to 200,000
         return 'unbelievably high mileage' # Return a string describing it as "unbelievably high mileage"
 
-def style_from_description(available_styles: List[str], description: str) -> str:
+def style_from_description(available_styles: List[str], description: str, verbose=0) -> str:
     """
     Returns the closest style option from the list of available_styles based on the description provided.
 
@@ -36,7 +36,7 @@ def style_from_description(available_styles: List[str], description: str) -> str
     - str: A string representing the closest style option from the available_styles list based on the description.
     """
     try:
-        print("[INFO] Extrapolating style from description")
+        if verbose > 1: print("[INFO] Extrapolating style from description")
 
         # Remove all non-alphanumeric and non-whitespace characters from description
         description = ''.join([ c if (c.isalnum() or c.isspace()) else '' for c in description ])
@@ -65,7 +65,7 @@ def style_from_description(available_styles: List[str], description: str) -> str
 
     except:
         # If no matching style option is found, return the middle option
-        print("[INFO] Couldn't extrapolate style level from listing. Picking middle option (median expense)")
+        if verbose > 1: print("[INFO] Couldn't extrapolate style level from listing. Picking middle option (median expense)")
         
         size = len(available_styles)
         middle_index = size//2

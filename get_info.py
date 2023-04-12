@@ -30,26 +30,27 @@ def pick_style(available_styles: list, specs: dict, desc: str) -> str:
         try: return style_from_specs(available_styles, specs)
         except: return style_from_description(available_styles, desc)
 
-def analyze_car(url: str) -> None:
+def analyze_car(url: str, verbose=0) -> None:
     """
     Analyzes a car listing on eBay by decoding the VIN number, determining the make and model, and getting price ranges
     from Kelley Blue Book. Outputs a briefing with relevant information.
 
     Args:
     - url (str): The URL of the eBay listing to analyze
+    - verbose (int): The level of verboseness. 0 is the default (no stout)
 
     Returns:
     - None
     """
 
     # get info from ebay listing
-    print('Getting info from ebay...')
+    if verbose > 0: print('Getting info from ebay...')
     listing_price = get_listing_price(url)
     specs = get_item_specs(url)
     desc = get_description(url)
 
     # vin lookup
-    print('Decoding VIN number...')
+    if verbose > 0: print('Decoding VIN number...')
     vin_decoded = vin_decode(specs['VIN'], specs['Year'])
 
     # Vehicle Variables
@@ -59,7 +60,7 @@ def analyze_car(url: str) -> None:
     mileage = specs['Mileage']
 
     # get model
-    print('Analyzing listing for model ...')
+    if verbose > 0: print('Analyzing listing for model ...')
     available_models = pd.read_csv('models_years_db.csv')
     available_models = available_models.loc[available_models['Make'] == make]
     available_models = available_models['Model'].to_list()
@@ -68,7 +69,7 @@ def analyze_car(url: str) -> None:
     model = model.values[0][1]
 
     # Get KBB styles
-    print('Analyzing listing for style ...')
+    if verbose > 0: print('Analyzing listing for style ...')
     body = vin_decoded['BodyClass']
     available_styles = get_styles(
         serialize(make), 
@@ -78,9 +79,9 @@ def analyze_car(url: str) -> None:
 
     style = pick_style(available_styles, specs, desc)
 
-    print(f'\n[INFO] Vehicle Information:\nMake: {make}, model: {model}, style: {style}, year: {year}, mileage: {thousands(mileage)}, listing price: ${thousands(listing_price)}\n')
+    if verbose > 1:  print(f'\n[INFO] Vehicle Information:\nMake: {make}, model: {model}, style: {style}, year: {year}, mileage: {thousands(mileage)}, listing price: ${thousands(listing_price)}\n')
 
-    print('Getting Trade-In ranges from KBB...')
+    if verbose > 0: print('Getting Trade-In ranges from KBB...')
 
     trade_in_ranges = get_ranges(
         serialize(make), 
@@ -91,7 +92,7 @@ def analyze_car(url: str) -> None:
         serialize(mileage),
         trade_in=True)
 
-    print('Getting private party ranges from KBB...')
+    if verbose > 0: print('Getting private party ranges from KBB...')
 
     private_party_ranges = get_ranges(
         serialize(make), 
@@ -105,7 +106,7 @@ def analyze_car(url: str) -> None:
     mileage = int(mileage)
 
     # Generate Breifing
-    print('\n\n##### Breifing #####')
+    if verbose > 0: print('\n\n##### Breifing #####')
 
     breifing_str = generate_str_breifing(
         year,

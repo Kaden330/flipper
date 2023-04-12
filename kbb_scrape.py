@@ -13,7 +13,7 @@ from utils import StyleException, calc_simalarity, dollar_to_int, search_a_in_b,
 
 custom_user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
         
-def get_styles(make: str, model: str, year: int, body_type: str = None) -> List[str]:
+def get_styles(make: str, model: str, year: int, body_type: str = None, verbose=0) -> List[str]:
     """
     Get a list of styles for a given vehicle make, model, and year from kbb.com.
     
@@ -38,7 +38,7 @@ def get_styles(make: str, model: str, year: int, body_type: str = None) -> List[
     # navigate to kbb.com styles page for the given vehicle parameters
     browser.get(f'https://www.kbb.com/{make}/{model}/{year}/styles/?intent=buy-used')
 
-    print(f'https://www.kbb.com/{make}/{model}/{year}/styles/?intent=buy-used')
+    if verbose > 2: print(f'https://www.kbb.com/{make}/{model}/{year}/styles/?intent=buy-used')
 
     styles = []
     try:
@@ -78,7 +78,7 @@ def get_styles(make: str, model: str, year: int, body_type: str = None) -> List[
     # check if styles list contains any invalid values and raise an exception if it does
     break_list = ['Price New/Used', 'Search by Price', 'Cars For Sale']
     if search_a_in_b(styles, break_list):
-        print(styles)
+        if verbose > 2: print(styles)
         raise StyleException('function was not supplied with real values.`make` `model` or `year` are invalid vehicle parameters')
     else:
         return styles
@@ -154,23 +154,24 @@ if __name__ == '__main__':
     year = input('year?: ')
     condition = input('condition? (Poor, Fair, Good, Very Good, or Excellent): ')
     mileage = input('mileage?: ')
+    verbose = 1
 
-    # Print available styles for the car and their corresponding number
-    print(f'\nAvailable styles for a {year} {model}...')
+    # Get available styles for the car
+    if verbose > 0: (f'\nAvailable styles for a {year} {model}...')
     available_styles = get_styles(
         serialize(make), 
         serialize(model), 
         serialize(year))
 
     for i, style in enumerate(available_styles):
-        print(f'{i+1}. {style}')
+        if verbose > 1: print(f'{i+1}. {style}')
 
     # Prompt user for the style number corresponding to the desired style
     style_index = int(input('Style number?: '))
     style = available_styles[style_index-1]
 
     # Print price ranges for trade-in and private party sales
-    print(f'\nPrice ranges for a {year} {style} {model}...')
+    if verbose > 0: print(f'\nPrice ranges for a {year} {style} {model}...')
     trade_in_ranges = get_ranges(
         serialize(make), 
         serialize(model), 
@@ -180,7 +181,7 @@ if __name__ == '__main__':
         serialize(mileage),
         trade_in=True)
     
-    print(f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}")
+    if verbose > 0: print(f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}")
 
     private_party_ranges = get_ranges(
         serialize(make), 
@@ -191,7 +192,7 @@ if __name__ == '__main__':
         serialize(mileage),
         trade_in=False)
     
-    print(f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}")
+    if verbose > 0: print(f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}")
 
     # Calculate potential profit range and average
     best_delta = dollar_to_int(private_party_ranges['high']) - dollar_to_int(trade_in_ranges['low'])
@@ -199,4 +200,4 @@ if __name__ == '__main__':
     avg_delta = dollar_to_int(private_party_ranges['value']) - dollar_to_int(trade_in_ranges['value'])
 
     # Print potential profit range and average
-    print(f"The potential profit delta ranges from ${worst_delta} to ${best_delta} and averages around ${avg_delta}")
+    if verbose > 0: print(f"The potential profit delta ranges from ${worst_delta} to ${best_delta} and averages around ${avg_delta}")
