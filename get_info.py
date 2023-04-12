@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 
 from ebay_scrape import get_description, get_item_specs, get_listing_price
-from get_info_helpers import (generate_str_breifing, style_from_description, style_from_specs)
+from get_info_helpers import generate_str_breifing, style_from_description, style_from_specs
 from kbb_scrape import get_ranges, get_styles
 from utils import get_best_pair, serialize, thousands
 from vin_decoder import vin_decode
@@ -119,8 +119,8 @@ def analyze_car(url: str) -> None:
         trade_in_ranges
     )
 
-    print(breifing_str)
+    return breifing_str
     
 if __name__ == '__main__':
     LISTING_URL = sys.argv[1]
-    analyze_car(LISTING_URL)
+    print(analyze_car(LISTING_URL))

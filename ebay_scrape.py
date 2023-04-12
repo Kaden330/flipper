@@ -8,14 +8,11 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.expected_conditions import \
-    visibility_of_element_located
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from ebay_scrubber import Scrubber
 from utils import DescriptionError, clean_strings, dollar_to_int, remove_items_between_strings, search_a_in_b
-
 
 def get_item_specs(url):
     """
@@ -164,9 +161,10 @@ def get_description(url):
     html = browser.page_source
 
     browser.quit()
-    time.sleep(5)
+    time.sleep(1)
 
     soup = BeautifulSoup(html, 'html.parser')
+
     try:
         desc = soup.find('div', id='vehicleDescription')
         desc_parsed = re.sub('\s+',' ',desc.text).strip()
