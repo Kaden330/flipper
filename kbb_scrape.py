@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from utils import StyleException, calc_simalarity, dollar_to_int, search_a_in_b, serialize
+from thread_class import ReturnValueThread
 
 custom_user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
         
@@ -37,7 +38,7 @@ def get_styles(make: str, model: str, year: int, body_type: str = None, verbose=
 
     # navigate to kbb.com styles page for the given vehicle parameters
     browser.get(f'https://www.kbb.com/{make}/{model}/{year}/styles/?intent=buy-used')
-
+    
     if verbose > 2: print(f'https://www.kbb.com/{make}/{model}/{year}/styles/?intent=buy-used')
 
     styles = []
@@ -100,7 +101,6 @@ def get_ranges(make: str, model: str, style: str, year: int, condition: str, mil
     Returns:
         - dict: A dictionary containing the low, high, and value of the price range.
     """
-    
     # Define parsers for different price types
     def _trade_in_parser(str):
         parsed_data = {}
@@ -125,22 +125,27 @@ def get_ranges(make: str, model: str, style: str, year: int, condition: str, mil
     else:
         price_type = 'private-party'
         parser = _private_party_parser
-                    
-    # Set up webdriver
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless=new')
-    options.add_argument(f'user-agent={custom_user_agent}')
-    browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+                        
+    def _agent(make, model, year, style, condition, mileage, price_type):
+        # Set up webdriver
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless=new')
+        options.add_argument(f'user-agent={custom_user_agent}')
+        browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-    # Navigate to URL
-    browser.get(f'https://www.kbb.com/{make}/{model}/{year}/{style}/?condition={condition}&intent=trade-in-sell&mileage={mileage}&pricetype={price_type}')
+        # Navigate to URL
+        browser.get(f'https://www.kbb.com/{make}/{model}/{year}/{style}/?condition={condition}&intent=trade-in-sell&mileage={mileage}&pricetype={price_type}')
 
-    # Get price ranges
-    ranges = browser.find_element(By.CLASS_NAME, 'css-je8g23')
-    values = ranges.get_attribute("aria-label")
+        # Get price ranges
+        ranges = browser.find_element(By.CLASS_NAME, 'css-je8g23')
+        values = ranges.get_attribute("aria-label")
 
-    browser.quit()
-    time.sleep(5)
+        browser.quit()
+        return values
+    
+    value_thread = ReturnValueThread(target=_agent, args=(make, model, year, style, condition, mileage, price_type))
+    value_thread.start()
+    values = value_thread.join()
 
     # Parse and return price range
     return parser(values)

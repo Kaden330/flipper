@@ -7,6 +7,8 @@ from get_info_helpers import generate_str_breifing, style_from_description, styl
 from kbb_scrape import get_ranges, get_styles
 from utils import get_best_pair, serialize, thousands
 from vin_decoder import vin_decode
+from thread_class import ReturnValueThread
+from datetime import datetime
 
 
 def pick_style(available_styles: list, specs: dict, desc: str) -> str:
@@ -44,14 +46,31 @@ def analyze_car(url: str, verbose=0) -> None:
     """
 
     # get info from ebay listing
+    start = datetime.now()
     if verbose > 0: print('Getting info from ebay...')
-    listing_price = get_listing_price(url)
-    specs = get_item_specs(url)
-    desc = get_description(url)
+
+    descr_thread = ReturnValueThread(target=get_description, args=(url,)) 
+    specs_thread = ReturnValueThread(target=get_item_specs, args=(url,))
+    price_thread = ReturnValueThread(target=get_listing_price, args=(url,)) 
+    descr_thread.start()
+    specs_thread.start()
+    price_thread.start()
+    
+    specs = specs_thread.join()
 
     # vin lookup
+    print(f'vin lookup at {datetime.now() - start}')
     if verbose > 0: print('Decoding VIN number...')
-    vin_decoded = vin_decode(specs['VIN'], specs['Year'])
+    vin_decode_thread = ReturnValueThread(target=vin_decode, args=(specs['VIN'], specs['Year']))
+    vin_decode_thread.start()
+
+    # load in dataset of makes and models
+    available_models = pd.read_csv('models_years_db.csv')
+
+    # get data from threads
+    print(f'get data from threads at {datetime.now() - start}')
+    listing_price = price_thread.join()
+    vin_decoded = vin_decode_thread.join()
 
     # Vehicle Variables
     make = vin_decoded['Make'].title()
@@ -60,8 +79,9 @@ def analyze_car(url: str, verbose=0) -> None:
     mileage = specs['Mileage']
 
     # get model
+    print(f'get model at {datetime.now() - start}')
+
     if verbose > 0: print('Analyzing listing for model ...')
-    available_models = pd.read_csv('models_years_db.csv')
     available_models = available_models.loc[available_models['Make'] == make]
     available_models = available_models['Model'].to_list()
 
@@ -69,6 +89,7 @@ def analyze_car(url: str, verbose=0) -> None:
     model = model.values[0][1]
 
     # Get KBB styles
+    print(f'get styles at {datetime.now() - start}')
     if verbose > 0: print('Analyzing listing for style ...')
     body = vin_decoded['BodyClass']
     available_styles = get_styles(
@@ -76,6 +97,9 @@ def analyze_car(url: str, verbose=0) -> None:
         serialize(model), 
         serialize(year),
         serialize(body))
+    
+    print(f'pick styles at {datetime.now() - start}')
+    desc = descr_thread.join() # load in data from descr_thread
 
     style = pick_style(available_styles, specs, desc)
 
@@ -83,6 +107,7 @@ def analyze_car(url: str, verbose=0) -> None:
 
     if verbose > 0: print('Getting Trade-In ranges from KBB...')
 
+    print(f'get ranges at {datetime.now() - start}')
     trade_in_ranges = get_ranges(
         serialize(make), 
         serialize(model), 
@@ -123,5 +148,5 @@ def analyze_car(url: str, verbose=0) -> None:
     return breifing_str
     
 if __name__ == '__main__':
-    LISTING_URL = sys.argv[1]
+    LISTING_URL = 'https://www.ebay.com/itm/385540746588?hash=item59c404ed5c%3Ag%3APtQAAOSwzgBkNWTH&mkevt=1&mkcid=1&mkrid=711-53200-19255-0&campid=5337650957&customid=&toolid=10049'
     print(analyze_car(LISTING_URL))

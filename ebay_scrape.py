@@ -1,6 +1,7 @@
 import json
 import re
 import time
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -12,7 +13,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from ebay_scrubber import Scrubber
-from utils import DescriptionError, clean_strings, dollar_to_int, remove_items_between_strings, search_a_in_b
+from thread_class import ReturnValueThread
+from utils import (DescriptionError, clean_strings, dollar_to_int, remove_items_between_strings, search_a_in_b)
+
 
 def get_item_specs(url):
     """
@@ -149,19 +152,25 @@ def get_listing_price(url):
 # get description
 def get_description(url):
     
-    custom_user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
-    
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless=new')
-    options.add_argument(f'user-agent={custom_user_agent}')
-    browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    def _agent(url):
+        custom_user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
+        
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless=new')
+        options.add_argument(f'user-agent={custom_user_agent}')
+        browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-    browser.get(url)  # navigate to URL
-    browser.switch_to.frame('desc_ifr')
-    html = browser.page_source
+        browser.get(url)  # navigate to URL
+        browser.switch_to.frame('desc_ifr')
+        html = browser.page_source
 
-    browser.quit()
-    time.sleep(1)
+        browser.quit()
+        return html
+
+    # using threads to save time waiting for browser to quit
+    load_thread = ReturnValueThread(target=_agent, args=(url,))
+    load_thread.start()
+    html = load_thread.join()
 
     soup = BeautifulSoup(html, 'html.parser')
 
