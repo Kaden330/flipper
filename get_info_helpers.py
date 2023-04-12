@@ -2,6 +2,7 @@ import numpy as np
 from difflib import SequenceMatcher, get_close_matches
 from utils import dollar_to_int, thousands
 from page import Page
+from typing import List
 
 def mileage_level(mileage:int) -> str:
     """
@@ -20,16 +21,16 @@ def mileage_level(mileage:int) -> str:
     else: # If mileage is greater than or equal to 200,000
         return 'unbelievably high mileage' # Return a string describing it as "unbelievably high mileage"
 
-def style_from_description(available_styles: list, description: str) -> str:
+def style_from_description(available_styles: List[str], description: str) -> str:
     """
     Returns the closest style option from the list of available_styles based on the description provided.
 
     Arguments:
-    - available_styles (list): A list of style options to choose from.
+    - available_styles (List[str]): a list of available car styles to choose from
     - description (str): The description from the listing to compare against the available styles.
 
     Returns:
-    - A string representing the closest style option from the available_styles list based on the description.
+    - str: A string representing the closest style option from the available_styles list based on the description.
     """
     try:
         print("[INFO] Extrapolating style from description")
@@ -68,43 +69,81 @@ def style_from_description(available_styles: list, description: str) -> str:
         return available_styles[middle_index]
     
     
-def style_from_specs(available_styles, listing_specs):
-    # Use trim from listing to pick the closest option from kbb
-    return get_close_matches(listing_specs['Trim'], available_styles, cutoff=0)[0]
+def style_from_specs(available_styles: List[str], listing_specs: dict) -> str:
+    """
+    Given a list of available car styles and a dictionary of listing specifications, 
+    returns the closest matching car style based on the trim specification from the listing.
 
-def generate_breifing(year, make, style, model, mileage:int, desc, listing_price:int, private_party_ranges, trade_in_ranges):
+    Args:
+    - available_styles (List[str]): a list of available car styles to choose from
+    - listing_specs (dict): a dictionary of listing specifications for a car, with at least 
+      the 'Trim' key specifying the trim level of the car
 
-        # Calculate important factors
+    Returns:
+    - str: the closest matching car style from the available_styles list, based on the trim 
+      specification in the listing_specs dictionary
+    """
 
-        best_delta = dollar_to_int(private_party_ranges['high']) - dollar_to_int(trade_in_ranges['low'])
-        worst_delta = dollar_to_int(private_party_ranges['low']) - dollar_to_int(trade_in_ranges['high'])
-        avg_delta = dollar_to_int(private_party_ranges['value']) - dollar_to_int(trade_in_ranges['value'])
+    # Use get_close_matches function from difflib to pick the closest option from available_styles
+    # based on the trim level of the car specified in listing_specs
+    matches = get_close_matches(listing_specs['Trim'], available_styles, cutoff=0)
 
-        listing_best_delta = dollar_to_int(private_party_ranges['high']) - listing_price
-        listing_worst_delta = dollar_to_int(private_party_ranges['low']) - listing_price
-        listing_avg_delta = dollar_to_int(private_party_ranges['value']) - listing_price
-        
-        # Generate Breifing
-        breifing = Page()
+    # Return the closest matching style
+    return matches[0]
 
-        breifing.press(f'\nThis car is a {year} {make} {style} {model} with {mileage_level(mileage)} ({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.\nThe best case senario for profit baised on the listing price is ${thousands(listing_best_delta)}')
+def generate_briefing(year:int, make:str, style:str, model:str, mileage:int, desc:str, listing_price:int, private_party_ranges:dict, trade_in_ranges:dict) -> str:
+    """
+    Generates a briefing for a car listing with information about the car, pricing, and potential profits.
 
-        breifing.press('\nListing Description:')
-        breifing.press(f'\n{desc}\n')
-            
-        breifing.press(f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}")
-        breifing.press(f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}")
-        breifing.press(f"The potential profit ranges from ${thousands(worst_delta)} to ${thousands(best_delta)} and averages around ${thousands(avg_delta)}")
-        breifing.press(f"The profit at listing price ranges from ${thousands(listing_worst_delta)} to ${thousands(listing_best_delta)} and averages around ${thousands(listing_avg_delta)}")
+    Args:
+    - year (int): The year of the car.
+    - make (str): The make of the car.
+    - style (str): The style of the car.
+    - model (str): The model of the car.
+    - mileage (int): The mileage of the car.
+    - desc (str): The listing description.
+    - listing_price (int): The listing price of the car.
+    - private_party_ranges (dict): A dictionary containing the private party price range for the car.
+    - trade_in_ranges (dict): A dictionary containing the trade-in price range for the car.
 
-        breifing.press('\nDetails:')
-        breifing.press(year)
-        breifing.press(make)
-        breifing.press(style)
-        breifing.press(model)
-        breifing.press(thousands(mileage))
-        breifing.press(f'listed at ${listing_price}')
-        breifing.press(f'potential avg profit ${avg_delta}')
-        breifing.press(f'potential listing profit ${listing_avg_delta}')
+    Returns:
+    - str: A string containing the generated briefing.
+    """
 
-        return breifing.body
+    # Calculate important factors
+    best_delta = dollar_to_int(private_party_ranges['high']) - dollar_to_int(trade_in_ranges['low'])
+    worst_delta = dollar_to_int(private_party_ranges['low']) - dollar_to_int(trade_in_ranges['high'])
+    avg_delta = dollar_to_int(private_party_ranges['value']) - dollar_to_int(trade_in_ranges['value'])
+
+    listing_best_delta = dollar_to_int(private_party_ranges['high']) - listing_price
+    listing_worst_delta = dollar_to_int(private_party_ranges['low']) - listing_price
+    listing_avg_delta = dollar_to_int(private_party_ranges['value']) - listing_price
+
+    # Generate Briefing
+    breifing = Page()
+
+    # Car information
+    breifing.press(f'\nThis car is a {year} {make} {style} {model} with {mileage_level(mileage)} ({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.')
+
+    # Listing description
+    breifing.press('\nListing Description:')
+    breifing.press(f'\n{desc}\n')
+
+    # Pricing information
+    breifing.press(f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}")
+    breifing.press(f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}")
+    breifing.press(f"The potential profit ranges from ${thousands(worst_delta)} to ${thousands(best_delta)} and averages around ${thousands(avg_delta)}")
+    breifing.press(f"The profit at listing price ranges from ${thousands(listing_worst_delta)} to ${thousands(listing_best_delta)} and averages around ${thousands(listing_avg_delta)}")
+
+    # Additional car details
+    breifing.press('\nDetails:')
+    breifing.press(year)
+    breifing.press(make)
+    breifing.press(style)
+    breifing.press(model)
+    breifing.press(thousands(mileage))
+    breifing.press(f'listed at ${listing_price}')
+    breifing.press(f'potential avg profit ${avg_delta}')
+    breifing.press(f'potential listing profit ${listing_avg_delta}')
+
+    return breifing.body
