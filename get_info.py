@@ -1,65 +1,13 @@
-import difflib
-import json
 import sys
-from difflib import SequenceMatcher, get_close_matches
 
 import numpy as np
 import pandas as pd
 
 from ebay_scrape import get_description, get_item_specs, get_listing_price
+from get_info_helpers import style_from_description, style_from_specs, generate_breifing
 from kbb_scrape import get_ranges, get_styles
-from page import Page
-from utils import (dict_format, dollar_to_int, get_best_pair, searalize,
-                   thousands)
-from vin_decoder import (get_all_makes, get_models, get_vin_decode_info,
-                         vin_decode)
-
-
-def mileage_level(mileage:int) -> str:
-    if mileage < 25000: return 'very low mileage'
-    if mileage < 50000: return 'low mileage'
-    elif mileage < 100000: return 'mid mileage'
-    elif mileage < 150000: return 'high mileage'
-    elif mileage < 200000: return 'very high mileage'
-    else: return 'unbelievably high mileage'
-
-def style_from_description(available_styles, description):
-    try:
-        print("[INFO] Extrapolating style from description")
-
-        # Use discription from listing to pick the closest option from kbb
-        description = ''.join([ c if (c.isalnum() or c.isspace()) else '' for c in description ])
-        words = description.split(' ')
-
-        average_len_of_style = int(np.floor(np.mean([len(style.split(' ')) for style in available_styles])))
-
-        pairs = []
-        for i in range(len(words)-average_len_of_style):
-            pair = ' '.join(words[i:i+average_len_of_style])
-            pairs.append(pair)
-
-        scored_pairs = {}
-        for style in available_styles:
-            pair_scores = []
-            for pair in pairs:
-                pair_scores.append(SequenceMatcher(None, style, pair).ratio())
-            
-            scored_pairs[style] = np.max(pair_scores)
-
-        return max(scored_pairs, key=scored_pairs.get)
-
-    except: 
-        # If theres no key that matches pic the middle one
-        print("[INFO] Couldn\'t extrapolate style level from listing. Picking middle option (median expense)")
-        
-        size = len(available_styles)
-        middle_index = size//2
-        return available_styles[middle_index]
-    
-
-def style_from_specs(available_styles, listing_specs):
-    # Use trim from listing to pick the closest option from kbb
-    return get_close_matches(listing_specs['Trim'], available_styles, cutoff=0)[0]
+from utils import get_best_pair, searalize, thousands
+from vin_decoder import vin_decode
 
 
 def pick_style(available_styles, specs, desc):
@@ -74,15 +22,10 @@ def pick_style(available_styles, specs, desc):
 def analyze_car(url):
     # get info from ebay listing
 
-    print('Getting info from ebay...', end='\r')
-    print('Getting info from ebay... listing price', end='\r')
+    print('Getting info from ebay...')
     listing_price = get_listing_price(url)
-    print('Getting info from ebay... listing specs', end='\r')
     specs = get_item_specs(url)
-    print('Getting info from ebay... listing description')
     desc = get_description(url)
-    print('Getting info from ebay... done')
-    print('final Specs:', specs)
 
     # vin lookup
     print('Decoding VIN number...')
@@ -139,43 +82,6 @@ def analyze_car(url):
         trade_in=False)
 
     mileage = int(mileage)
-    
-    def generate_breifing(year, make, style, model, mileage:int, desc, listing_price:int, private_party_ranges, trade_in_ranges):
-
-        # Calculate important factors
-
-        best_delta = dollar_to_int(private_party_ranges['high']) - dollar_to_int(trade_in_ranges['low'])
-        worst_delta = dollar_to_int(private_party_ranges['low']) - dollar_to_int(trade_in_ranges['high'])
-        avg_delta = dollar_to_int(private_party_ranges['value']) - dollar_to_int(trade_in_ranges['value'])
-
-        listing_best_delta = dollar_to_int(private_party_ranges['high']) - listing_price
-        listing_worst_delta = dollar_to_int(private_party_ranges['low']) - listing_price
-        listing_avg_delta = dollar_to_int(private_party_ranges['value']) - listing_price
-        
-        # Generate Breifing
-        breifing = Page()
-
-        breifing.press(f'\nThis car is a {year} {make} {style} {model} with {mileage_level(mileage)} ({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.\nThe best case senario for profit baised on the listing price is ${thousands(listing_best_delta)}')
-
-        breifing.press('\nListing Description:')
-        breifing.press(f'\n{desc}\n')
-            
-        breifing.press(f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}")
-        breifing.press(f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}")
-        breifing.press(f"The potential profit ranges from ${thousands(worst_delta)} to ${thousands(best_delta)} and averages around ${thousands(avg_delta)}")
-        breifing.press(f"The profit at listing price ranges from ${thousands(listing_worst_delta)} to ${thousands(listing_best_delta)} and averages around ${thousands(listing_avg_delta)}")
-
-        breifing.press('\nDetails:')
-        breifing.press(year)
-        breifing.press(make)
-        breifing.press(style)
-        breifing.press(model)
-        breifing.press(thousands(mileage))
-        breifing.press(f'listed at ${listing_price}')
-        breifing.press(f'potential avg profit ${avg_delta}')
-        breifing.press(f'potential listing profit ${listing_avg_delta}')
-
-        return breifing.body
     
     # Generate Breifing
     print('\n\n##### Breifing #####')
