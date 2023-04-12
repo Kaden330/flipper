@@ -1,20 +1,19 @@
 import difflib
 import json
 import sys
-from difflib import get_close_matches, SequenceMatcher
+from difflib import SequenceMatcher, get_close_matches
 
 import numpy as np
 import pandas as pd
 
 from ebay_scrape import get_description, get_item_specs, get_listing_price
 from kbb_scrape import get_ranges, get_styles
-from utils import dollar_to_int, searalize, thousands, get_best_pair
+from page import Page
+from utils import (dict_format, dollar_to_int, get_best_pair, searalize,
+                   thousands)
 from vin_decoder import (get_all_makes, get_models, get_vin_decode_info,
                          vin_decode)
 
-
-def dict_format(dict):
-    return json.dumps(dict, indent=4)
 
 def mileage_level(mileage:int) -> str:
     if mileage < 25000: return 'very low mileage'
@@ -140,13 +139,6 @@ def analyze_car(url):
         trade_in=False)
 
     mileage = int(mileage)
-
-    class Page():
-        def __init__(self, init_str=''):
-            self.body = init_str
-
-        def press(self, str, end='\n'):
-            self.body = self.body + (str+end)
     
     def generate_breifing(year, make, style, model, mileage:int, desc, listing_price:int, private_party_ranges, trade_in_ranges):
 

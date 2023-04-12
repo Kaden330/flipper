@@ -1,6 +1,7 @@
 import re
 from difflib import SequenceMatcher
 import pandas as pd
+import json
 
 def dollar_to_int(str):
     if '.' in str:
@@ -67,6 +68,9 @@ def get_best_pair(a:list, b:list):
     best = data[data['ratio']==data['ratio'].max()]
 
     return best
+
+def dict_format(dict):
+    return json.dumps(dict, indent=4)
 
 
 class StyleException(Exception):
