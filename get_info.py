@@ -1,6 +1,5 @@
 import difflib
 import json
-import logging
 import sys
 from difflib import get_close_matches, SequenceMatcher
 
@@ -12,10 +11,6 @@ from kbb_scrape import get_ranges, get_styles
 from utils import dollar_to_int, searalize, thousands, get_best_pair
 from vin_decoder import (get_all_makes, get_models, get_vin_decode_info,
                          vin_decode)
-
-logging.basicConfig(filename="newfile.log", filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 def dict_format(dict):
@@ -32,7 +27,6 @@ def mileage_level(mileage:int) -> str:
 def style_from_description(available_styles, description):
     try:
         print("[INFO] Extrapolating style from description")
-        logger.info('Extrapolating style from description')
 
         # Use discription from listing to pick the closest option from kbb
         description = ''.join([ c if (c.isalnum() or c.isspace()) else '' for c in description ])
@@ -58,7 +52,6 @@ def style_from_description(available_styles, description):
     except: 
         # If theres no key that matches pic the middle one
         print("[INFO] Couldn\'t extrapolate style level from listing. Picking middle option (median expense)")
-        logger.info('Couldn\'t extrapolate style level from listing. Picking middle option (median expense)')
         
         size = len(available_styles)
         middle_index = size//2
@@ -66,7 +59,6 @@ def style_from_description(available_styles, description):
     
 
 def style_from_specs(available_styles, listing_specs):
-    logger.info('Trying to use listing trim to pick style')
     # Use trim from listing to pick the closest option from kbb
     return get_close_matches(listing_specs['Trim'], available_styles, cutoff=0)[0]
 
@@ -74,7 +66,6 @@ def style_from_specs(available_styles, listing_specs):
 def pick_style(available_styles, specs, desc):
     if len(available_styles) == 1:
         print('[INFO] Only one style avalible')
-        logger.info('Only one style availible')
         return available_styles[0]
 
     else:
@@ -85,7 +76,6 @@ def analyze_car(url):
     # get info from ebay listing
 
     print('Getting info from ebay...', end='\r')
-    logger.info('Getting listing price')
     print('Getting info from ebay... listing price', end='\r')
     listing_price = get_listing_price(url)
     print('Getting info from ebay... listing specs', end='\r')
@@ -97,7 +87,6 @@ def analyze_car(url):
 
     # vin lookup
     print('Decoding VIN number...')
-    logger.info('Decoding VIN number')
     vin_decoded = vin_decode(specs['VIN'], specs['Year'])
 
     # Vehicle Variables
@@ -108,7 +97,6 @@ def analyze_car(url):
 
     # get model
     print('Analyzing listing for model ...')
-    logger.info('Analyzing listing for model')
     available_models = pd.read_csv('models_years_db.csv')
     available_models = available_models.loc[available_models['Make'] == make]
     available_models = available_models['Model'].to_list()
@@ -118,9 +106,7 @@ def analyze_car(url):
 
     # Get KBB styles
     print('Analyzing listing for style ...')
-    logger.info('Analyzing listing for style')
     body = vin_decoded['BodyClass']
-    logger.info('Getting possible styles from KBB')
     available_styles = get_styles(
             searalize(make), 
             searalize(model), 
@@ -132,7 +118,6 @@ def analyze_car(url):
     print(f'\n[INFO] Vehicle Information:\nMake: {make}, model: {model}, style: {style}, year: {year}, mileage: {thousands(mileage)}, listing price: ${thousands(listing_price)}\n')
 
     print('Getting Trade-In ranges from KBB...')
-    logger.info('Getting Trade-In ranges from KBB')
 
     trade_in_ranges = get_ranges(
         searalize(make), 
@@ -144,7 +129,6 @@ def analyze_car(url):
         trade_in=True)
 
     print('Getting private party ranges from KBB...')
-    logger.info('Getting private party ranges from KBB')
 
     private_party_ranges = get_ranges(
         searalize(make), 
@@ -167,7 +151,6 @@ def analyze_car(url):
     def generate_breifing(year, make, style, model, mileage:int, desc, listing_price:int, private_party_ranges, trade_in_ranges):
 
         # Calculate important factors
-        logger.info('Calculating important factors')
 
         best_delta = dollar_to_int(private_party_ranges['high']) - dollar_to_int(trade_in_ranges['low'])
         worst_delta = dollar_to_int(private_party_ranges['low']) - dollar_to_int(trade_in_ranges['high'])
@@ -203,7 +186,6 @@ def analyze_car(url):
         return breifing.body
     
     # Generate Breifing
-    logger.info('Generating breifing')
     print('\n\n##### Breifing #####')
 
     breifing_str = generate_breifing(
