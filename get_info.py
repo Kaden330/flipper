@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 
 from ebay_scrape import get_description, get_item_specs, get_listing_price
-from get_info_helpers import generate_str_breifing, style_from_description, style_from_specs
+from get_info_helpers import generate_styled_breifing, generate_str_breifing, style_from_description, style_from_specs
 from kbb_scrape import get_ranges, get_styles
 from utils import get_best_pair, serialize, thousands
 from vin_decoder import vin_decode
@@ -133,7 +133,7 @@ def analyze_car(url: str, verbose=0) -> None:
     # Generate Breifing
     if verbose > 0: print('\n\n##### Breifing #####')
 
-    breifing_str = generate_str_breifing(
+    breifing_styled = generate_styled_breifing(
         year,
         make,
         style,
@@ -141,12 +141,13 @@ def analyze_car(url: str, verbose=0) -> None:
         mileage,
         desc,
         listing_price,
+        url,
         private_party_ranges,
         trade_in_ranges
     )
 
-    return breifing_str
+    return breifing_styled
     
 if __name__ == '__main__':
     LISTING_URL = 'https://www.ebay.com/itm/385540746588?hash=item59c404ed5c%3Ag%3APtQAAOSwzgBkNWTH&mkevt=1&mkcid=1&mkrid=711-53200-19255-0&campid=5337650957&customid=&toolid=10049'
-    print(analyze_car(LISTING_URL))
+    print(analyze_car(LISTING_URL)[0])

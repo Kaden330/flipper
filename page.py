@@ -1,3 +1,6 @@
+
+from typing import List
+
 class Page():
     """
     A class representing a simple text page.
@@ -24,4 +27,71 @@ class Page():
         Returns:
         - None
         """
-        self.body += (string + end)
+        self.body = self.body + string + end
+
+class StyledPage():
+    """
+    A class representing a simple text page.
+    """
+    def __init__(self):
+        self.body = ''
+
+    def _escape(self, text: str) -> str:
+        markdown_chars = ["_", "*", "`", "[", "]", "(", ")", "#", "+", "-", ".", "!", "$"]
+        for i in range(len(markdown_chars)):
+            text = text.replace(markdown_chars[i], '\\' + markdown_chars[i])
+        return text
+
+    def h1(self, string: str) -> None:
+        string = self._escape(string)
+        self.body = self.body + f'\n# {string}\n\n'
+    
+    def h2(self, string: str) -> None:
+        string = self._escape(string)
+        self.body = self.body + f'\n## {string}\n\n'
+
+    def h3(self, string: str) -> None:
+        string = self._escape(string)
+        self.body = self.body + f'\n### {string}\n\n'
+
+    def h4(self, string: str) -> None:
+        string = self._escape(string)
+        self.body = self.body + f'\n#### {string}\n\n'
+
+    def add_heading(self, string: str, h_level: int, end='\n\n') -> None:
+        string = self._escape(string)
+        self.body = self.body + f"{'#'*h_level} {string}{end}"
+    
+    def add_paragraph(self, string: str) -> None:
+        string = self._escape(string)
+        self.body = self.body + string + '\n\n'
+    
+    def add_blockquote(self, string:str) -> None:
+        string = self._escape(string)
+        self.body = self.body + '> ' + string + '\n\n'
+    
+    def add_link(self, url, title):
+        title = self._escape(title)
+        self.body = self.body + f'[{title}]({url}) \n\n'
+    
+    def add_raw_text(self, string: str, end='') -> None:
+        self.body = self.body + string + end
+    
+    def add_unordered_list(self, list: list) -> None:
+        output = ''
+        for i, item in enumerate(list):
+            item = self._escape(str(item))
+            output = output + f'{i+1}. {item}\n'
+
+        self.body = self.body + output + '\n\n'
+
+    def add_ordered_list(self, list: list) -> None:
+        output = ''
+        for item in list:
+            item = self._escape(str(item))
+            output = output + f'- {item}\n'
+
+        self.body = self.body + output + '\n\n'
+    
+    def divider(self):
+        self.body = self.body + '---\n\n'

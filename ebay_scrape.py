@@ -183,6 +183,10 @@ def get_description(url):
             desc_parsed = re.sub('\s+',' ',desc.text).strip()
         except:
             raise DescriptionError
+    
+    desc_split = desc_parsed.split(' ')
+    if desc_split[0] == 'Vehicle' and desc_split[1] == 'Details':
+        desc_parsed = ' '.join(desc_split[2:])
         
     return desc_parsed
 

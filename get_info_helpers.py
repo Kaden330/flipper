@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from page import Page
+from page import Page, StyledPage
 from utils import dollar_to_int, thousands
 
 
@@ -140,13 +140,120 @@ def generate_str_breifing(year:int, make:str, style:str, model:str, mileage:int,
 
     # Additional car details
     breifing.press('\nDetails:')
-    breifing.press(year)
-    breifing.press(make)
-    breifing.press(style)
-    breifing.press(model)
+    breifing.press(f'{year}')
+    breifing.press(f'{make}')
+    breifing.press(f'{style}')
+    breifing.press(f'{model}')
     breifing.press(thousands(mileage))
     breifing.press(f'listed at ${listing_price}')
     breifing.press(f'potential avg profit ${avg_delta}')
     breifing.press(f'potential listing profit ${listing_avg_delta}')
+
+
+    return breifing.body
+
+def generate_styled_breifing(year:int, make:str, style:str, model:str, mileage:int, desc:str, listing_price:int, listing_url:str, private_party_ranges:dict, trade_in_ranges:dict) -> str:
+    """
+    Generates a briefing for a car listing with information about the car, pricing, and potential profits.
+
+    Args:
+    - year (int): The year of the car.
+    - make (str): The make of the car.
+    - style (str): The style of the car.
+    - model (str): The model of the car.
+    - mileage (int): The mileage of the car.
+    - desc (str): The listing description.
+    - listing_price (int): The listing price of the car.
+    - private_party_ranges (dict): A dictionary containing the private party price range for the car.
+    - trade_in_ranges (dict): A dictionary containing the trade-in price range for the car.
+
+    Returns:
+    - str: A string containing the styled briefing.
+    """
+
+    # Calculate important factors
+    best_delta = dollar_to_int(private_party_ranges['high']) - dollar_to_int(trade_in_ranges['low'])
+    worst_delta = dollar_to_int(private_party_ranges['low']) - dollar_to_int(trade_in_ranges['high'])
+    avg_delta = dollar_to_int(private_party_ranges['value']) - dollar_to_int(trade_in_ranges['value'])
+    range = (dollar_to_int(trade_in_ranges['high']) - dollar_to_int(trade_in_ranges['low']))/2
+
+    listing_best_delta = dollar_to_int(private_party_ranges['high']) - listing_price
+    listing_worst_delta = dollar_to_int(private_party_ranges['low']) - listing_price
+    listing_avg_delta = dollar_to_int(private_party_ranges['value']) - listing_price
+
+    # Generate Briefing
+    breifing = StyledPage()
+
+    breifing.h2(f'{year} {make} {style} {model}')
+    breifing.h3(f'Breifing about this {make}')
+    breifing.add_link(url=listing_url, title='Listing')
+    breifing.divider()
+
+    breifing.h3('Basic Information')
+
+    if listing_worst_delta <= -300:
+        string = [
+            f"This car is a {year} {make} {style} {model} with {mileage_level(mileage)}",
+            f"({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.",
+            f"Too get a good deal you need pay at or less than {trade_in_ranges['value']} (+/- ${range}).",
+            f"It's currently listed pretty low. Find out why they priced it so low."
+        ]
+        breifing.add_paragraph(' '.join(string))
+    
+    elif listing_worst_delta <= 100:
+        string = [
+            f"This car is a {year} {make} {style} {model} with {mileage_level(mileage)}",
+            f"({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.",
+            f"Too get a good deal you need pay at or less than {trade_in_ranges['value']} (+/- ${range}).",
+            f"It's currently listed at a good price so you don't have much negotiating to do."
+        ]
+        breifing.add_paragraph(' '.join(string))
+
+    elif listing_worst_delta <= 2000:
+        string = [
+            f"This car is a {year} {make} {style} {model} with {mileage_level(mileage)}",
+            f"({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.",
+            f"Too get a good deal you need to pay around {trade_in_ranges['value']} (+/- ${range})."
+            f"For this car to make sense as a flip, you have to negotiate the price down about",
+            f"${thousands(listing_price - dollar_to_int(trade_in_ranges['low']))}."
+        ]
+        breifing.add_paragraph(' '.join(string))
+
+    else:
+        string = [
+            f"This car is a {year} {make} {style} {model} with {mileage_level(mileage)}",
+            f"({thousands(mileage)}). It\'s listed at ${thousands(listing_price)}.",
+            f"Too get a good deal you need to pay around {trade_in_ranges['value']} (+/- ${range})."
+            f"This car is listed so high you have a long way to go. For this car to make sense as a",
+            f"flip, you have to negotiate the price down about",
+            f"${thousands(listing_price - dollar_to_int(trade_in_ranges['low']))}."
+        ]
+        breifing.add_paragraph(' '.join(string))
+    
+    breifing.add_raw_text('Here is the discription the seller gave:\n')
+    breifing.add_blockquote(desc)
+
+    breifing.h3('Pricing Information')
+
+    pricing_string = [
+        f"Trade in prices range from {trade_in_ranges['low']} to {trade_in_ranges['high']}.",
+        f"Private party prices range from {private_party_ranges['low']} to {private_party_ranges['high']}.",
+        f"The potential profit after successful negotiating ranges from",
+        f"${thousands(worst_delta)} to ${thousands(best_delta)} and averages around ${thousands(avg_delta)}.",
+        f"The profit at listing price ranges from ${thousands(listing_worst_delta)} to ${thousands(listing_best_delta)}",
+        f"and averages around ${thousands(listing_avg_delta)}."
+    ]
+    breifing.add_paragraph(' '.join(pricing_string))
+
+    # Additional car details
+    dets = [
+        f'{year} {make} {style} {model}',
+        thousands(mileage), 
+        f'listed at ${listing_price}', 
+        f'potential avg profit ${avg_delta}', 
+        f'potential listing profit ${listing_avg_delta}',
+        f"needed negotiation ammount ${thousands(listing_price - dollar_to_int(trade_in_ranges['low']))}"]
+        
+    breifing.add_unordered_list(dets)
 
     return breifing.body
